@@ -517,7 +517,23 @@ async function captureAndAnalyze(){
 function doSign(){if(signed)return;signed=true;document.getElementById('spad').classList.add('signed');showToast('Unterschrift gespeichert ✓');checkSub();}
 function doCb(){checked=!checked;document.getElementById('cbrow').classList.toggle('ck',checked);const b=document.getElementById('cbx');b.classList.toggle('ck',checked);b.innerHTML=checked?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'';checkSub();}
 function checkSub(){document.getElementById('subbtn').classList.toggle('act',signed&&checked);}
-function doSubmit(){if(!signed||!checked)return;showToast('Dokument wird eingereicht…');setTimeout(()=>{goTo(5);showToast('Erfolgreich eingereicht 🎉');},750);}
+function doSubmit(){
+  if(!signed||!checked)return;
+  showToast('Dokument wird eingereicht…');
+  // Collect scanned device data
+  const typ=document.getElementById('ai-typ').textContent;
+  const marke=document.getElementById('ai-marke').textContent;
+  const modell=document.getElementById('ai-modell').textContent;
+  const snEl=document.getElementById('ai-sn');
+  const seriennummer=snEl?snEl.textContent:document.getElementById('snInput').value||'';
+  const d=devices[currentDevice]||{};
+  fetch('/api/sheets',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({typ,marke,modell,seriennummer,asset:d.asset||'',owner:d.owner||'',timestamp:new Date().toISOString()})
+  }).catch(()=>{});
+  setTimeout(()=>{goTo(5);showToast('Erfolgreich eingereicht 🎉');},750);
+}
 
 function makeQR(text,size){
   const hash=[...text].reduce((a,c)=>((a<<5)-a)+c.charCodeAt(0)|0,0);
