@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeviceOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0ede8;--card:#faf9f7;--accent:#ff4520;--ink:#1a1814;--ink2:#5a5650;--ink3:#9a9590;--border:#e0ddd8;--green:#22c55e}
+body{background:#d8d4cd;font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px;color:var(--ink)}
+.step-nav{display:flex;gap:7px;margin-bottom:20px;background:rgba(255,255,255,0.65);padding:9px 13px;border-radius:50px;backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(0,0,0,0.1)}
+.step-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:12px;color:var(--ink2);transition:all .2s;display:flex;align-items:center;justify-content:center}
+.step-btn:hover{border-color:var(--accent);color:var(--accent)}
+.step-btn.active{background:var(--accent);border-color:var(--accent);color:white}
+.phone-shell{width:375px;background:#111;border-radius:50px;padding:14px;box-shadow:0 0 0 1px #333,0 30px 80px rgba(0,0,0,0.4),inset 0 0 0 1px #444;position:relative}
+.phone-notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:110px;height:28px;background:#111;border-radius:0 0 18px 18px;z-index:10}
+.phone-screen{width:100%;min-height:780px;background:var(--bg);border-radius:38px;overflow:hidden;position:relative}
+.screen{display:none;flex-direction:column;min-height:780px;animation:fadeIn .28s ease}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.toast{position:absolute;bottom:26px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--ink);color:white;padding:9px 18px;border-radius:50px;font-size:12px;font-weight:500;white-space:nowrap;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.sbar{height:42px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 7px;font-size:11px;font-weight:600}
+
+/* ── LOGIN ── */
+.login-body{flex:1;display:flex;flex-direction:column;padding:0 28px 36px}
+.logo-mark{width:46px;height:46px;background:var(--accent);border-radius:13px;display:flex;align-items:center;justify-content:center;color:white;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:21px;margin-top:36px}
+.login-h{font-family:'Bricolage Grotesque',sans-serif;font-size:29px;font-weight:800;line-height:1.1;margin-top:28px;margin-bottom:6px}
+.login-sub{color:var(--ink2);font-size:13px;line-height:1.55;margin-bottom:36px}
+.divider{display:flex;align-items:center;gap:10px;color:var(--ink3);font-size:11px;font-weight:500;margin-bottom:20px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.sso-btn{width:100%;padding:13px;border-radius:15px;border:1.5px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;gap:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;margin-bottom:11px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.sso-btn:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(255,69,32,0.14)}
+.login-foot{margin-top:auto;text-align:center;font-size:11px;color:var(--ink3);line-height:1.6}
+
+/* ── HOME ── */
+.home-hdr{background:var(--card);padding:10px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hdr-logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+.hdr-logo span{width:26px;height:26px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ff7555,#ff4520);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px}
+.home-scroll{flex:1;padding:18px 22px 0;overflow-y:auto}
+.greeting{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:700;margin-bottom:3px}
+.greeting-sub{color:var(--ink2);font-size:12px;margin-bottom:18px}
+.scan-banner{background:var(--ink);border-radius:18px;padding:18px;margin-bottom:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:transform .15s;overflow:hidden;position:relative}
+.scan-banner::before{content:'';position:absolute;top:-18px;right:-18px;width:90px;height:90px;border-radius:50%;background:rgba(255,69,32,0.15)}
+.scan-banner:active{transform:scale(.98)}
+.scan-banner h3{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:700;color:white;margin-bottom:2px}
+.scan-banner p{font-size:11px;color:rgba(255,255,255,0.45)}
+.scan-ico{width:42px;height:42px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}
+.notif-card{background:#fff5f3;border:1.5px solid #ffcfc7;border-radius:15px;padding:12px 15px;margin-bottom:22px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .2s}
+.notif-card:hover{border-color:var(--accent)}
+.notif-dot{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0}
+.notif-text h4{font-size:12px;font-weight:600}
+.notif-text p{font-size:11px;color:var(--accent);margin-top:1px}
+.sec-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;margin-bottom:11px}
+.dev-card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:11px}
+.dev-icon{width:38px;height:38px;background:var(--bg);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;border:1px solid var(--border)}
+.dev-name{font-weight:600;font-size:13px}
+.dev-sn{font-size:10px;color:var(--ink3);margin-top:1px;font-family:monospace}
+.pill{padding:3px 9px;border-radius:50px;font-size:10px;font-weight:600;flex-shrink:0}
+.pill-g{background:#dcfce7;color:#15803d}
+.pill-o{background:#fff3e0;color:#d97706}
+.bnav{background:rgba(250,249,247,0.93);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;padding:9px 0 18px}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink3);font-size:10px;font-weight:500;padding:4px 0}
+.ni.act{color:var(--accent)}
+.ni svg{width:21px;height:21px}
+
+/* ── SCAN ── */
+.scan-hdr{background:var(--card);padding:11px 22px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.back-btn{width:32px;height:32px;border-radius:9px;border:1.5px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);transition:all .2s}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+.scan-hdr h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px}
+.vf-wrap{margin:18px 22px 0;border-radius:18px;overflow:hidden;position:relative;height:210px;background:#0a0a0a;border:1.5px solid #333}
+.vf-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:20px 20px}
+.vf-corners::before,.vf-corners::after,.vf-corners span::before,.vf-corners span::after{content:'';position:absolute;width:18px;height:18px;border-color:var(--accent);border-style:solid;border-radius:2px}
+.vf-corners::before{top:11px;left:11px;border-width:2px 0 0 2px}
+.vf-corners::after{top:11px;right:11px;border-width:2px 2px 0 0}
+.vf-corners span::before{bottom:11px;left:11px;border-width:0 0 2px 2px}
+.vf-corners span::after{bottom:11px;right:11px;border-width:0 2px 2px 0}
+.scan-line{position:absolute;left:11px;right:11px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanMove 2s ease-in-out infinite;box-shadow:0 0 8px var(--accent)}
+@keyframes scanMove{0%,100%{top:18px}50%{top:178px}}
+.vf-label{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.45);font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.scan-bd{padding:14px 22px 22px;flex:1}
+.scan-instr{font-size:12px;color:var(--ink2);text-align:center;margin-bottom:16px}
+.sim-btn{width:100%;padding:11px;border:1.5px dashed var(--border);border-radius:13px;background:transparent;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;margin-bottom:14px;transition:all .2s}
+.sim-btn:hover{border-color:var(--accent);color:var(--accent)}
+#camVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.capture-btn{width:100%;padding:13px;background:var(--ink);color:white;border:none;border-radius:15px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;margin-bottom:14px}
+.capture-btn:hover{background:#333}.capture-btn:disabled{opacity:0.5;cursor:not-allowed}
+.api-key-wrap{margin-bottom:12px}.api-key-label{font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.api-key-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:11px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--card);color:var(--ink);outline:none;transition:border .2s}
+.api-key-input:focus{border-color:var(--accent)}
+.sn-input-wrap{margin-top:8px;padding:12px;background:#fffbf0;border:1.5px solid #fde68a;border-radius:12px;animation:fadeIn .3s ease}
+.sn-input-label{font-size:11px;color:#92400e;font-weight:600;margin-bottom:6px}
+.sn-input{width:100%;padding:9px 12px;border:1.5px solid #fde68a;border-radius:10px;font-size:13px;font-family:monospace;background:white;color:var(--ink);outline:none}
+.ai-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:14px;animation:fadeIn .4s ease}
+.ai-badge{display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;font-size:10px;font-weight:600;padding:3px 9px;border-radius:50px;margin-bottom:11px}
+.ai-badge::before{content:'●';font-size:6px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.ai-row:last-child{border-bottom:none;padding-bottom:0}
+.ai-row-l{font-size:11px;color:var(--ink3);font-weight:500}
+.ai-row-v{font-size:12px;font-weight:600}
+.ai-row-v.mn{font-family:monospace;font-size:11px}
+.cta-btn{width:100%;padding:15px;background:var(--accent);color:white;border:none;border-radius:15px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.cta-btn:hover{background:#e63c1a;box-shadow:0 4px 16px rgba(255,69,32,.32)}
+
+/* ── SIGN ── */
+.sign-bd{flex:1;padding:14px 22px 90px;overflow-y:auto}
+.pdf-box{background:white;border:1px solid var(--border);border-radius:15px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.pdf-hdr{display:flex;align-items:center;gap:9px;padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:11px}
+.pdf-ico{width:34px;height:34px;background:#fee2e2;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.pdf-t{font-weight:700;font-size:12px}
+.pdf-st{font-size:10px;color:var(--ink3);margin-top:1px}
+.pdf-row{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:11px;color:var(--ink2)}
+.pdf-row:last-child{border-bottom:none}
+.pdf-row::before{content:'›';color:var(--accent);font-weight:700}
+.sl{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.sign-pad{background:var(--card);border:1.5px dashed var(--border);border-radius:15px;height:90px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:12px}
+.sign-pad:hover{border-color:var(--accent)}
+.sign-pad.signed{border-style:solid;border-color:#bbf7d0;background:#f0fdf4}
+.sign-ph{font-size:12px;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:3px}
+.sign-svg{display:none;width:100%;height:100%;position:absolute;inset:0}
+.sign-pad.signed .sign-svg{display:block}
+.sign-pad.signed .sign-ph{display:none}
+.cb-row{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;background:var(--card);border:1.5px solid var(--border);border-radius:13px;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.cb-row.ck{border-color:#bbf7d0;background:#f0fdf4}
+.cb{width:19px;height:19px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.cb.ck{background:var(--green);border-color:var(--green)}
+.cb-lbl{font-size:11px;color:var(--ink2);line-height:1.55}
+.sub-btn{width:100%;padding:15px;background:var(--ink3);color:white;border:none;border-radius:15px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:not-allowed;transition:all .3s;opacity:.45}
+.sub-btn.act{background:var(--accent);opacity:1;cursor:pointer;box-shadow:0 4px 16px rgba(255,69,32,.28)}
+.sub-btn.act:hover{background:#e63c1a}
+
+/* ── SUCCESS ── */
+.suc-bd{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px 24px 36px}
+.suc-ico{width:76px;height:76px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.suc-t{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;font-weight:800;text-align:center;margin-bottom:7px}
+.suc-s{font-size:13px;color:var(--ink2);text-align:center;line-height:1.6;margin-bottom:24px}
+.suc-list{width:100%;background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.suc-list-t{padding:13px 15px 9px;font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;border-bottom:1px solid var(--border)}
+.suc-item{display:flex;align-items:center;gap:11px;padding:11px 15px;border-bottom:1px solid var(--border);animation:slideIn .4s ease both}
+.suc-item:last-child{border-bottom:none}
+.suc-item:nth-child(1){animation-delay:.1s}.suc-item:nth-child(2){animation-delay:.2s}.suc-item:nth-child(3){animation-delay:.3s}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.suc-ck{width:26px;height:26px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#16a34a}
+.suc-in{flex:1}
+.suc-in-n{font-size:12px;font-weight:600}
+.suc-in-s{font-size:10px;color:var(--ink3);font-family:monospace}
+.print-cta{width:100%;padding:15px;background:var(--ink);color:white;border:none;border-radius:15px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+.print-cta:hover{background:#2d2a25}
+.skip-btn{background:transparent;border:none;color:var(--ink3);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;padding:8px}
+
+/* ══════════════════════════
+   SCREEN 6 – QR EINZELDRUCK
+══════════════════════════ */
+.print-hdr{background:var(--card);padding:11px 22px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.print-hdr h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px}
+.print-hdr-left{display:flex;align-items:center;gap:11px}
+.bt-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600;transition:all .4s}
+.bt-pill.searching{background:#f0f4ff;color:#3b5bdb}
+.bt-pill.connected{background:#f0fdf4;color:#15803d}
+.bt-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bt-pill.searching .bt-dot{background:#3b5bdb;animation:pulse 1s infinite}
+.bt-pill.connected .bt-dot{background:#16a34a}
+.progress-track{height:3px;background:var(--border);margin:0 22px}
+.progress-fill{height:3px;background:var(--accent);border-radius:2px;transition:width .5s ease}
+.stepper-wrap{padding:14px 22px 0;display:flex;align-items:center;gap:8px}
+.stepper-dots{display:flex;gap:5px}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .3s}
+.sdot.active{background:var(--accent);width:18px;border-radius:4px}
+.sdot.done{background:var(--green)}
+.stepper-label{font-size:11px;color:var(--ink3);font-weight:500;margin-left:auto}
+.print-card-wrap{padding:14px 22px 0;flex:1;overflow-y:auto;padding-bottom:110px}
+.big-qr-card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;transition:border-color .3s}
+.big-qr-card.active-card{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,69,32,0.1)}
+.big-qr-card.done-card{border-color:#bbf7d0;box-shadow:0 0 0 3px rgba(34,197,94,0.08)}
+.qr-card-header{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.qr-device-emoji{font-size:22px;width:40px;height:40px;background:var(--bg);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qr-device-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;color:var(--ink)}
+.qr-device-model{font-size:11px;color:var(--ink2);margin-top:1px}
+.qr-status-badge{margin-left:auto;padding:4px 10px;border-radius:50px;font-size:10px;font-weight:600;flex-shrink:0}
+.qr-status-badge.pending{background:#fff3e0;color:#d97706}
+.qr-status-badge.done{background:#dcfce7;color:#15803d}
+.qr-preview-zone{padding:20px;display:flex;align-items:center;justify-content:center;gap:20px;background:white;border-bottom:1px solid var(--border)}
+.qr-big-frame{width:120px;height:120px;border-radius:12px;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.qr-label-preview{flex:1;min-width:0}
+.qr-label-row{display:flex;align-items:baseline;gap:6px;margin-bottom:5px}
+.qr-label-key{font-size:10px;color:var(--ink3);font-weight:500;min-width:52px;flex-shrink:0}
+.qr-label-val{font-size:11px;font-weight:600;color:var(--ink);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qr-label-val.name-val{font-family:'DM Sans',sans-serif;font-size:11px}
+.label-size-row{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.label-size-label{font-size:11px;color:var(--ink3);font-weight:500}
+.size-chips{display:flex;gap:6px;margin-left:auto}
+.size-chip{padding:4px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.size-chip.active{border-color:var(--accent);background:#fff5f3;color:var(--accent)}
+.confirm-zone{padding:14px 16px}
+.confirm-hint{font-size:11px;color:var(--ink3);text-align:center;margin-bottom:10px}
+.print-single-btn{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.print-single-btn:hover{background:#e63c1a;box-shadow:0 4px 14px rgba(255,69,32,.3)}
+.print-single-btn:disabled{background:var(--ink3);opacity:.4;cursor:not-allowed;box-shadow:none}
+.print-single-btn.printing-state{background:var(--ink);cursor:default}
+.printed-confirm{padding:14px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.printed-check-big{width:44px;height:44px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#16a34a;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+.printed-confirm-text{font-size:13px;font-weight:600;color:var(--ink)}
+.printed-confirm-sub{font-size:11px;color:var(--ink3)}
+.queued-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:.55;transition:all .3s}
+.queued-card.next-up{opacity:1;border-color:#c8e6ff;background:#f0f8ff}
+.queued-icon{font-size:18px;width:34px;height:34px;background:var(--bg);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.queued-name{font-weight:600;font-size:12px}
+.queued-sn{font-size:10px;color:var(--ink3);font-family:monospace}
+.queued-badge{margin-left:auto;font-size:10px;font-weight:600;padding:3px 8px;border-radius:50px}
+.queued-badge.next{background:#e0f2fe;color:#0369a1}
+.queued-badge.wait{background:var(--bg);color:var(--ink3);border:1px solid var(--border)}
+.queued-badge.done{background:#dcfce7;color:#15803d}
+.print-action-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(250,249,247,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 22px 24px}
+.next-device-btn{width:100%;padding:14px;border-radius:15px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}
+.next-device-btn.ready{background:var(--ink);color:white}
+.next-device-btn.ready:hover{background:#2d2a25}
+.next-device-btn.hidden{display:none}
+.all-done-btn{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:15px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:none;align-items:center;justify-content:center;gap:8px}
+.all-done-btn.show{display:flex}
+.all-done-btn:hover{background:#16a34a}
+.print-overlay{display:none;position:absolute;inset:0;background:rgba(17,17,17,0.75);backdrop-filter:blur(6px);z-index:50;border-radius:38px;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.print-overlay.show{display:flex}
+.print-spinner{width:52px;height:52px;border-radius:50%;border:3px solid rgba(255,255,255,0.15);border-top-color:white;animation:spin 0.75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.print-overlay-title{color:white;font-size:15px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif}
+.print-overlay-sub{color:rgba(255,255,255,0.5);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<nav class="step-nav">
+  <button class="step-btn active" onclick="goTo(1)" id="s1">1</button>
+  <button class="step-btn" onclick="goTo(2)" id="s2">2</button>
+  <button class="step-btn" onclick="goTo(3)" id="s3">3</button>
+  <button class="step-btn" onclick="goTo(4)" id="s4">4</button>
+  <button class="step-btn" onclick="goTo(5)" id="s5">5</button>
+  <button class="step-btn" onclick="goTo(6);initPrint()" id="s6">🖨</button>
+</nav>
+
+<div class="phone-shell">
+  <div class="phone-notch"></div>
+  <div class="phone-screen">
+    <div class="toast" id="toast"></div>
+
+    <!-- ══ S1 LOGIN ══ -->
+    <div class="screen active" id="sc1">
+      <div class="sbar"><span>9:41</span><span>▲▲▲ 🔋</span></div>
+      <div class="login-body">
+        <div class="logo-mark">D</div>
+        <div style="font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase;margin-top:28px;margin-bottom:5px">Welcome to</div>
+        <div class="login-h">DeviceOS</div>
+        <div class="login-sub">Verwalte deine Firmengeräte schnell &amp; sicher.</div>
+        <div class="divider">Anmelden mit SSO</div>
+        <button class="sso-btn" onclick="doSSO('Microsoft')">
+          <svg width="17" height="17" viewBox="0 0 18 18"><rect x="0" y="0" width="8.5" height="8.5" fill="#f25022"/><rect x="9.5" y="0" width="8.5" height="8.5" fill="#7fba00"/><rect x="0" y="9.5" width="8.5" height="8.5" fill="#00a4ef"/><rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#ffb900"/></svg>
+          Mit Microsoft anmelden
+        </button>
+        <button class="sso-btn" onclick="doSSO('Google')">
+          <svg width="17" height="17" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/></svg>
+          Mit Google anmelden
+        </button>
+        <div class="login-foot">Mit der Anmeldung akzeptierst du unsere<br><span style="color:var(--accent)">Nutzungsbedingungen</span> &amp; <span style="color:var(--accent)">Datenschutz</span></div>
+      </div>
+    </div>
+
+    <!-- ══ S2 HOME ══ -->
+    <div class="screen" id="sc2" style="height:780px">
+      <div class="sbar" style="background:var(--card)"><span>9:41</span><span>●●●</span></div>
+      <div class="home-hdr"><div class="hdr-logo"><span>D</span>DeviceOS</div><div class="avatar">JM</div></div>
+      <div class="home-scroll">
+        <div class="greeting">Guten Morgen, Jan 👋</div>
+        <div class="greeting-sub">Sonntag, 15. März 2026</div>
+        <div class="scan-banner" onclick="goTo(3)">
+          <div><h3>Geräte scannen</h3><p>QR-Code oder Seriennummer</p></div>
+          <div class="scan-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><path d="M14 14h3v3"/></svg></div>
+        </div>
+        <div class="notif-card" onclick="goTo(4)">
+          <div class="notif-dot">📄</div>
+          <div class="notif-text"><h4>1 Dokument ausstehend</h4><p>Geräteübergabe signieren →</p></div>
+          <span style="margin-left:auto;color:var(--ink3)">›</span>
+        </div>
+        <div class="sec-title">Meine Geräte (3)</div>
+        <div class="dev-card"><div class="dev-icon">💻</div><div style="flex:1"><div class="dev-name">MacBook Pro 14"</div><div class="dev-sn">SN: C02XG1XFMD6T</div></div><span class="pill pill-g">Aktiv</span></div>
+        <div class="dev-card"><div class="dev-icon">📱</div><div style="flex:1"><div class="dev-name">iPhone 15 Pro</div><div class="dev-sn">SN: F4GTH9K2P1</div></div><span class="pill pill-g">Aktiv</span></div>
+        <div class="dev-card"><div class="dev-icon">🖥️</div><div style="flex:1"><div class="dev-name">Dell UltraSharp 27"</div><div class="dev-sn">SN: CN0GK93T4520</div></div><span class="pill pill-o">Ausstehend</span></div>
+      </div>
+      <div class="bnav">
+        <div class="ni act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+        <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Geräte</div>
+        <div class="ni" onclick="goTo(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Dokumente</div>
+        <div class="ni" onclick="goTo(6);initPrint()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Drucken</div>
+      </div>
+    </div>
+
+    <!-- ══ S3 SCAN ══ -->
+    <div class="screen" id="sc3">
+      <div class="sbar" style="background:var(--card)"><span>9:41</span><span>●●●</span></div>
+      <div class="scan-hdr"><button class="back-btn" onclick="goTo(2)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button><h2>Gerät scannen</h2></div>
+      <div style="padding:0 22px;margin-top:16px;margin-bottom:5px"><div style="font-size:11px;color:var(--ink3);font-weight:500;text-transform:uppercase;letter-spacing:.08em">Kamera</div></div>
+      <div class="vf-wrap"><video id="camVideo" autoplay playsinline muted></video><div class="vf-grid"></div><div class="vf-corners"><span></span></div><div class="scan-line"></div><div class="vf-label">Gerät in den Rahmen halten</div></div>
+      <div class="scan-bd">
+        <div class="api-key-wrap">
+          <div class="api-key-label">Claude API Key</div>
+          <input class="api-key-input" id="apiKeyInput" type="password" placeholder="sk-ant-api03-…" />
+        </div>
+        <button class="capture-btn" id="capturebtn" onclick="captureAndAnalyze()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M8.5 2h7l1.5 2H17a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h-.5L8.5 2z"/></svg>
+          Foto aufnehmen &amp; analysieren
+        </button>
+        <div id="aiResult" style="display:none">
+          <div class="ai-card">
+            <div class="ai-badge">KI-Erkennung</div>
+            <div class="ai-row"><span class="ai-row-l">Gerätetyp</span><span class="ai-row-v" id="ai-typ">–</span></div>
+            <div class="ai-row"><span class="ai-row-l">Marke</span><span class="ai-row-v" id="ai-marke">–</span></div>
+            <div class="ai-row"><span class="ai-row-l">Modell</span><span class="ai-row-v" id="ai-modell">–</span></div>
+            <div class="ai-row" id="ai-sn-row" style="display:none"><span class="ai-row-l">Seriennummer</span><span class="ai-row-v mn" id="ai-sn">–</span></div>
+            <div id="sn-input-wrap" style="display:none" class="sn-input-wrap">
+              <div class="sn-input-label">⚠️ Seriennummer erforderlich</div>
+              <input class="sn-input" id="snInput" type="text" placeholder="Seriennummer eingeben…" />
+            </div>
+          </div>
+          <button class="cta-btn" onclick="goTo(4);showToast('Gerät bestätigt ✓')">Gerät bestätigen →</button>
+        </div>
+      </div>
+      <canvas id="camCanvas" style="display:none"></canvas>
+    </div>
+
+    <!-- ══ S4 SIGN ══ -->
+    <div class="screen" id="sc4" style="height:780px">
+      <div class="sbar" style="background:var(--card)"><span>9:41</span><span>●●●</span></div>
+      <div class="scan-hdr"><button class="back-btn" onclick="goTo(3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button><h2>Dokument signieren</h2></div>
+      <div class="sign-bd">
+        <div class="pdf-box">
+          <div class="pdf-hdr"><div class="pdf-ico">📋</div><div><div class="pdf-t">Geräteübergabe-Protokoll</div><div class="pdf-st">StartupXYZ GmbH · 15.03.2026</div></div></div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:7px;font-weight:500;text-transform:uppercase;letter-spacing:.06em">Zugewiesene Geräte</div>
+          <div class="pdf-row">MacBook Air M2 — H7Q4R2XC9F</div>
+          <div class="pdf-row">MacBook Pro 14" — C02XG1XFMD6T</div>
+          <div class="pdf-row">iPhone 15 Pro — F4GTH9K2P1</div>
+        </div>
+        <div class="sl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Unterschrift</div>
+        <div class="sign-pad" id="spad" onclick="doSign()">
+          <div class="sign-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Tippen zum Unterschreiben</div>
+          <svg class="sign-svg" viewBox="0 0 280 90" xmlns="http://www.w3.org/2000/svg"><path d="M28 65 C38 38,53 24,63 42 C68 52,70 60,66 66 C62 72,56 70,53 66 C50 60,52 48,60 46" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/><path d="M77 62 C87 33,102 28,107 48 C110 60,105 70,99 66 C93 62,95 48,105 46 L117 43" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/><path d="M127 38 C129 38,129 42,127 42" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/><path d="M127 46 L125 68" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/><path d="M142 48 C152 33,165 33,165 50 C165 60,157 68,152 63 C147 58,149 46,159 44 L169 42" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/><path d="M182 62 L193 38 L204 62 M185 54 L201 54" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M212 48 L227 48 M219 42 L217 68" fill="none" stroke="#1a1814" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="cb-row" id="cbrow" onclick="doCb()"><div class="cb" id="cbx"></div><div class="cb-lbl">Ich bestätige die Vollständigkeit und den einwandfreien Zustand der aufgeführten Geräte.</div></div>
+        <button class="sub-btn" id="subbtn" onclick="doSubmit()">Dokument einreichen</button>
+      </div>
+    </div>
+
+    <!-- ══ S5 SUCCESS ══ -->
+    <div class="screen" id="sc5">
+      <div class="sbar"><span>9:41</span><span>●●●</span></div>
+      <div class="suc-bd">
+        <div style="height:8px"></div>
+        <div class="suc-ico"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg></div>
+        <div class="suc-t">Alles erledigt!</div>
+        <div class="suc-s">Geräte registriert &amp; Dokument signiert.<br>Jetzt QR-Labels für jedes Gerät drucken.</div>
+        <div class="suc-list">
+          <div class="suc-list-t">Registrierte Geräte</div>
+          <div class="suc-item"><div class="suc-ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><div class="suc-in"><div class="suc-in-n">MacBook Air M2</div><div class="suc-in-s">SN: H7Q4R2XC9F</div></div><span class="pill pill-g">Neu</span></div>
+          <div class="suc-item"><div class="suc-ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><div class="suc-in"><div class="suc-in-n">MacBook Pro 14"</div><div class="suc-in-s">SN: C02XG1XFMD6T</div></div><span class="pill pill-g">Aktiv</span></div>
+          <div class="suc-item"><div class="suc-ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><div class="suc-in"><div class="suc-in-n">iPhone 15 Pro</div><div class="suc-in-s">SN: F4GTH9K2P1</div></div><span class="pill pill-g">Aktiv</span></div>
+        </div>
+        <button class="print-cta" onclick="goTo(6);initPrint()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          QR-Labels drucken
+        </button>
+        <button class="skip-btn" onclick="goTo(2);showToast('Zurück zur Übersicht')">Überspringen</button>
+      </div>
+    </div>
+
+    <!-- ══ S6 QR EINZELDRUCK ══ -->
+    <div class="screen" id="sc6" style="height:780px;position:relative">
+      <div class="sbar" style="background:var(--card)"><span>9:41</span><span>●●●</span></div>
+      <div class="print-hdr">
+        <div class="print-hdr-left">
+          <button class="back-btn" onclick="goTo(5)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button>
+          <h2>QR-Labels drucken</h2>
+        </div>
+        <div class="bt-pill searching" id="btPill"><div class="bt-dot"></div><span id="btPillText">Suche…</span></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="stepper-wrap">
+        <div class="stepper-dots" id="stepperDots"></div>
+        <div class="stepper-label" id="stepperLabel">Gerät 1 von 3</div>
+      </div>
+      <div class="print-card-wrap" id="printCardWrap">
+        <div class="big-qr-card active-card" id="activeCard" style="margin-bottom:14px">
+          <div class="qr-card-header">
+            <div class="qr-device-emoji" id="activeEmoji">💻</div>
+            <div><div class="qr-device-name" id="activeName">–</div><div class="qr-device-model" id="activeModel">–</div></div>
+            <div class="qr-status-badge pending" id="activeBadge">Ausstehend</div>
+          </div>
+          <div class="qr-preview-zone">
+            <div class="qr-big-frame" id="activeQR"></div>
+            <div class="qr-label-preview" id="activeMeta"></div>
+          </div>
+          <div class="label-size-row">
+            <span class="label-size-label">Label-Größe</span>
+            <div class="size-chips">
+              <button class="size-chip active" onclick="setSize(this,'29×90')">29×90</button>
+              <button class="size-chip" onclick="setSize(this,'38×25')">38×25</button>
+              <button class="size-chip" onclick="setSize(this,'62×29')">62×29</button>
+            </div>
+          </div>
+          <div class="confirm-zone" id="confirmZone">
+            <div class="confirm-hint">Gerät in die Hand nehmen und Label aufkleben</div>
+            <button class="print-single-btn" id="printBtn" onclick="doPrintCurrent()" disabled style="opacity:.4">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Label drucken
+            </button>
+          </div>
+          <div class="printed-confirm" id="printedConfirm" style="display:none">
+            <div class="printed-check-big"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="printed-confirm-text">Label gedruckt &amp; aufgeklebt?</div>
+            <div class="printed-confirm-sub">Weiter zum nächsten Gerät →</div>
+          </div>
+        </div>
+        <div id="queueWrap"></div>
+      </div>
+      <div class="print-action-bar">
+        <button class="next-device-btn hidden" id="nextBtn" onclick="goNextDevice()">Nächstes Gerät <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+        <button class="all-done-btn" id="allDoneBtn" onclick="goTo(2);showToast('Alle Labels gedruckt 🎉')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>Fertig – Zur Startseite</button>
+      </div>
+      <div class="print-overlay" id="printOverlay">
+        <div class="print-spinner"></div>
+        <div class="print-overlay-title" id="overlayTitle">Drucke Label…</div>
+        <div class="print-overlay-sub">Brother QL-820NWB · Bluetooth</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let signed=false,checked=false;
+let currentDevice=0,printedDevices=[],btReady=false,selectedSize='29×90';
+const devices=[
+  {name:'MacBook Air M2',  model:'Apple · Laptop',     emoji:'💻',sn:'H7Q4R2XC9F',  asset:'AST-0041',owner:'Jan Müller'},
+  {name:'MacBook Pro 14"', model:'Apple · Laptop',     emoji:'💻',sn:'C02XG1XFMD6T',asset:'AST-0039',owner:'Jan Müller'},
+  {name:'iPhone 15 Pro',   model:'Apple · Smartphone', emoji:'📱',sn:'F4GTH9K2P1',  asset:'AST-0042',owner:'Jan Müller'},
+];
+
+function goTo(n){
+  const prev=[...document.querySelectorAll('.screen.active')].map(e=>parseInt(e.id.replace('sc','')));
+  [1,2,3,4,5,6].forEach(i=>{document.getElementById('sc'+i).classList.toggle('active',i===n);document.getElementById('s'+i).classList.toggle('active',i===n)});
+  if(n===3){startCamera();}else if(prev.includes(3)){stopCamera();}
+}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function doSSO(p){showToast('Verbinde mit '+p+'…');setTimeout(()=>{goTo(2);showToast('Angemeldet als Jan Müller ✓');},850);}
+let cameraStream=null;
+
+function startCamera(){
+  const video=document.getElementById('camVideo');
+  if(cameraStream){video.srcObject=cameraStream;return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}})
+    .then(s=>{cameraStream=s;video.srcObject=s;})
+    .catch(()=>showToast('Kamera nicht verfügbar'));
+}
+
+function stopCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+}
+
+async function captureAndAnalyze(){
+  const apiKey=document.getElementById('apiKeyInput').value.trim();
+  if(!apiKey){showToast('Bitte Claude API Key eingeben');return;}
+  const video=document.getElementById('camVideo');
+  const canvas=document.getElementById('camCanvas');
+  const btn=document.getElementById('capturebtn');
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||480;
+  canvas.getContext('2d').drawImage(video,0,0);
+  const imageData=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+  btn.disabled=true;
+  btn.innerHTML='⏳ KI analysiert…';
+  document.getElementById('aiResult').style.display='none';
+  document.getElementById('ai-sn-row').style.display='none';
+  document.getElementById('sn-input-wrap').style.display='none';
+  try{
+    const res=await fetch('/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:imageData}},
+        {type:'text',text:'Analysiere dieses Gerät. Antworte NUR mit JSON ohne Markdown: {"typ":"Laptop|Desktop|Smartphone|Tablet|Monitor|Drucker|Sonstiges","marke":"...","modell":"...","seriennummer_erforderlich":true|false,"seriennummer_wo":"z.B. Unterseite oder null","seriennummer":"falls im Bild sichtbar sonst null"}'}
+      ]}]})
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error?.message||'API Fehler');
+    const text=data.content[0].text;
+    const json=JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+    document.getElementById('ai-typ').textContent=json.typ||'–';
+    document.getElementById('ai-marke').textContent=json.marke||'–';
+    document.getElementById('ai-modell').textContent=json.modell||'–';
+    if(json.seriennummer){
+      document.getElementById('ai-sn-row').style.display='flex';
+      document.getElementById('ai-sn').textContent=json.seriennummer;
+    }else if(json.seriennummer_erforderlich){
+      document.getElementById('sn-input-wrap').style.display='block';
+      if(json.seriennummer_wo)document.getElementById('snInput').placeholder=json.seriennummer_wo;
+    }
+    document.getElementById('aiResult').style.display='block';
+    showToast('Erkannt: '+json.marke+' '+json.modell+' ✓');
+  }catch(e){
+    showToast('Fehler: '+(e.message||'Unbekannt'));
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M8.5 2h7l1.5 2H17a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h-.5L8.5 2z"/></svg>Nochmal aufnehmen';
+  }
+}
+function doSign(){if(signed)return;signed=true;document.getElementById('spad').classList.add('signed');showToast('Unterschrift gespeichert ✓');checkSub();}
+function doCb(){checked=!checked;document.getElementById('cbrow').classList.toggle('ck',checked);const b=document.getElementById('cbx');b.classList.toggle('ck',checked);b.innerHTML=checked?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'';checkSub();}
+function checkSub(){document.getElementById('subbtn').classList.toggle('act',signed&&checked);}
+function doSubmit(){if(!signed||!checked)return;showToast('Dokument wird eingereicht…');setTimeout(()=>{goTo(5);showToast('Erfolgreich eingereicht 🎉');},750);}
+
+function makeQR(text,size){
+  const hash=[...text].reduce((a,c)=>((a<<5)-a)+c.charCodeAt(0)|0,0);
+  const rand=(s)=>{let x=Math.sin(s+hash)*10000;return x-Math.floor(x);};
+  const cells=11,cs=Math.floor(size/cells);
+  let svg=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><rect width="${size}" height="${size}" fill="white"/>`;
+  const fp=(x,y)=>{const px=x*cs,py=y*cs;svg+=`<rect x="${px}" y="${py}" width="${cs*7}" height="${cs*7}" fill="#1a1814"/><rect x="${px+cs}" y="${py+cs}" width="${cs*5}" height="${cs*5}" fill="white"/><rect x="${px+cs*2}" y="${py+cs*2}" width="${cs*3}" height="${cs*3}" fill="#1a1814"/>`;};
+  fp(0,0);fp(cells-7,0);fp(0,cells-7);
+  for(let r=0;r<cells;r++)for(let c=0;c<cells;c++){const inFP=(r<8&&c<8)||(r<8&&c>=cells-8)||(r>=cells-8&&c<8);if(!inFP&&rand(r*cells+c+1)>0.45)svg+=`<rect x="${c*cs}" y="${r*cs}" width="${cs}" height="${cs}" fill="#1a1814"/>`;}
+  return svg+'</svg>';
+}
+
+function initPrint(){
+  currentDevice=0;printedDevices=[];btReady=false;selectedSize='29×90';
+  const pill=document.getElementById('btPill');
+  pill.className='bt-pill searching';document.getElementById('btPillText').textContent='Suche…';
+  const pb=document.getElementById('printBtn');pb.disabled=true;pb.style.opacity='0.4';
+  renderActiveCard();renderQueue();renderStepper();updateProgress();
+  setTimeout(()=>{btReady=true;pill.className='bt-pill connected';document.getElementById('btPillText').textContent='Brother QL';document.getElementById('printBtn').disabled=false;document.getElementById('printBtn').style.opacity='1';showToast('Drucker verbunden ✓');},1600);
+}
+
+function renderActiveCard(){
+  const d=devices[currentDevice];
+  document.getElementById('activeEmoji').textContent=d.emoji;
+  document.getElementById('activeName').textContent=d.name;
+  document.getElementById('activeModel').textContent=d.model;
+  document.getElementById('activeBadge').className='qr-status-badge pending';
+  document.getElementById('activeBadge').textContent='Ausstehend';
+  document.getElementById('activeQR').innerHTML=makeQR(d.sn+'|'+d.asset,104);
+  document.getElementById('activeCard').className='big-qr-card active-card';
+  document.getElementById('activeMeta').innerHTML=`
+    <div class="qr-label-row"><span class="qr-label-key">Seriennr.</span><span class="qr-label-val">${d.sn}</span></div>
+    <div class="qr-label-row"><span class="qr-label-key">Modell</span><span class="qr-label-val name-val">${d.name}</span></div>
+    <div class="qr-label-row"><span class="qr-label-key">Mitarbeiter</span><span class="qr-label-val name-val">${d.owner}</span></div>
+    <div class="qr-label-row"><span class="qr-label-key">Asset-ID</span><span class="qr-label-val">${d.asset}</span></div>`;
+  document.getElementById('confirmZone').style.display='block';
+  document.getElementById('printedConfirm').style.display='none';
+  document.getElementById('nextBtn').className='next-device-btn hidden';
+  document.getElementById('allDoneBtn').className='all-done-btn';
+  document.querySelectorAll('.size-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+}
+
+function renderQueue(){
+  const wrap=document.getElementById('queueWrap');
+  let html='';
+  devices.forEach((d,i)=>{
+    if(i===currentDevice)return;
+    const isDone=printedDevices.includes(i);
+    const isNext=!isDone&&i===devices.findIndex((_,j)=>j>currentDevice&&!printedDevices.includes(j));
+    const cls=isDone?'queued-card':(isNext?'queued-card next-up':'queued-card');
+    const badge=isDone?'<span class="queued-badge done">✓ Gedruckt</span>':(isNext?'<span class="queued-badge next">Als nächstes</span>':'<span class="queued-badge wait">Wartend</span>');
+    html+=`<div class="${cls}"><div class="queued-icon">${d.emoji}</div><div style="flex:1"><div class="queued-name">${d.name}</div><div class="queued-sn">${d.sn}</div></div>${badge}</div>`;
+  });
+  wrap.innerHTML=html;
+}
+
+function renderStepper(){
+  let html='';
+  devices.forEach((_,i)=>{html+=printedDevices.includes(i)?'<div class="sdot done"></div>':(i===currentDevice?'<div class="sdot active"></div>':'<div class="sdot"></div>');});
+  document.getElementById('stepperDots').innerHTML=html;
+  document.getElementById('stepperLabel').textContent=`Gerät ${currentDevice+1} von ${devices.length}`;
+}
+
+function updateProgress(){document.getElementById('progressFill').style.width=Math.round((printedDevices.length/devices.length)*100)+'%';}
+
+function setSize(el,size){document.querySelectorAll('.size-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');selectedSize=size;showToast('Label-Größe: '+size+' mm');}
+
+function doPrintCurrent(){
+  if(!btReady){showToast('Warte auf Drucker…');return;}
+  const d=devices[currentDevice];
+  const btn=document.getElementById('printBtn');
+  btn.disabled=true;btn.className='print-single-btn printing-state';
+  btn.innerHTML='<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:white;animation:spin .7s linear infinite"></div> Drucke…';
+  document.getElementById('printOverlay').classList.add('show');
+  document.getElementById('overlayTitle').textContent=`Drucke: ${d.name}`;
+  setTimeout(()=>{
+    document.getElementById('printOverlay').classList.remove('show');
+    document.getElementById('confirmZone').style.display='none';
+    document.getElementById('printedConfirm').style.display='flex';
+    document.getElementById('activeCard').className='big-qr-card done-card';
+    document.getElementById('activeBadge').className='qr-status-badge done';
+    document.getElementById('activeBadge').textContent='Gedruckt ✓';
+    printedDevices.push(currentDevice);
+    updateProgress();renderStepper();
+    const remaining=devices.filter((_,i)=>!printedDevices.includes(i));
+    if(remaining.length>0){document.getElementById('nextBtn').className='next-device-btn ready';}
+    else{document.getElementById('allDoneBtn').className='all-done-btn show';}
+    showToast(`Label für ${d.name} gedruckt ✓`);
+  },1600);
+}
+
+function goNextDevice(){
+  const next=devices.findIndex((_,i)=>!printedDevices.includes(i));
+  if(next===-1)return;
+  currentDevice=next;
+  renderActiveCard();renderQueue();renderStepper();updateProgress();
+  document.getElementById('printCardWrap').scrollTo({top:0,behavior:'smooth'});
+  const pb=document.getElementById('printBtn');
+  pb.disabled=false;pb.style.opacity='1';pb.className='print-single-btn';
+  pb.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Label drucken`;
+}
+</script>
+</body>
+</html>
